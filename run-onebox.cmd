@@ -39,3 +39,6 @@ docker network inspect %DOCKER_NETWORK_NAME% >nul 2>&1 || docker network create 
 
 
 docker-compose -f docker-compose-redis.yml up -d 
+
+endlocal
+exit /b
