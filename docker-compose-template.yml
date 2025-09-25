@@ -30,8 +30,6 @@ services:
     image: ${DOCKERHUB_IMAGE_REDIS}
     container_name: redis-sentinel-1
     restart: always
-    volumes:
-      - redis-sentinel-base:/redis-sentinel-base
     environment:
       - TZ=Europe/Kyiv
       - DOCKERHUB_IMAGE_REDIS=${DOCKERHUB_IMAGE_REDIS}
@@ -43,6 +41,9 @@ services:
       - REDIS_SENTINEL_QUORUM=${REDIS_SENTINEL_QUORUM}
       - REDIS_SENTINEL_DOWN_AFTER=${REDIS_SENTINEL_DOWN_AFTER}
       - REDIS_SENTINEL_FAILOVER=${REDIS_SENTINEL_FAILOVER}
+    volumes:
+      - sentinel1_data:/data:rw
+      - redis-sentinel-base:/redis-sentinel-base
     command: >
       sh -c "
         /redis-sentinel-base/init-sentinel.sh
@@ -60,8 +61,6 @@ services:
     image: ${DOCKERHUB_IMAGE_REDIS}
     container_name: redis-sentinel-2
     restart: always
-    volumes:
-      - redis-sentinel-base:/redis-sentinel-base
     environment:
       - DOCKERHUB_IMAGE_REDIS=${DOCKERHUB_IMAGE_REDIS}
       - REDIS_MASTER_HOST=${REDIS_MASTER_HOST}
@@ -72,6 +71,9 @@ services:
       - REDIS_SENTINEL_QUORUM=${REDIS_SENTINEL_QUORUM}
       - REDIS_SENTINEL_DOWN_AFTER=${REDIS_SENTINEL_DOWN_AFTER}
       - REDIS_SENTINEL_FAILOVER=${REDIS_SENTINEL_FAILOVER}
+    volumes:
+      - sentinel2_data:/data:rw
+      - redis-sentinel-base:/redis-sentinel-base
     command: >
       sh -c "
         /redis-sentinel-base/init-sentinel.sh
@@ -89,8 +91,6 @@ services:
     image: ${DOCKERHUB_IMAGE_REDIS}
     container_name: redis-sentinel-3
     restart: always
-    volumes:
-      - redis-sentinel-base:/redis-sentinel-base
     environment:
       - DOCKERHUB_IMAGE_REDIS=${DOCKERHUB_IMAGE_REDIS}
       - REDIS_MASTER_HOST=${REDIS_MASTER_HOST}
@@ -101,6 +101,9 @@ services:
       - REDIS_SENTINEL_QUORUM=${REDIS_SENTINEL_QUORUM}
       - REDIS_SENTINEL_DOWN_AFTER=${REDIS_SENTINEL_DOWN_AFTER}
       - REDIS_SENTINEL_FAILOVER=${REDIS_SENTINEL_FAILOVER}
+    volumes:
+      - sentinel3_data:/data:rw
+      - redis-sentinel-base:/redis-sentinel-base
     command: >
       sh -c "
         /redis-sentinel-base/init-sentinel.sh
@@ -112,7 +115,6 @@ services:
     depends_on:
       - redis-master
       - redis-slave
-
 
   redis-insight:
     image: ${DOCKERHUB_IMAGE_REDIS_INSIGHT}
@@ -134,22 +136,46 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: ./data/master
+      device: ${PWD}/data/master
+
   redis-slave-data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ./data/slave
+      device: ${PWD}/data/slave
+
   redis-sentinel-base:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ./redis-sentinel-base
+      device: ${PWD}/redis-sentinel-base
+
+  sentinel1_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/data/sentinel1
+
+  sentinel2_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/data/sentinel2
+
+  sentinel3_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PWD}/data/sentinel3
+
   redis-insight-data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ./data/insight
+      device: ${PWD}/data/insight
