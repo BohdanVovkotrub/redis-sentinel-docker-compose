@@ -1,8 +1,5 @@
 data/
 .env
 *.log
-docker-compose-redis-master.yml
-docker-compose-redis-slave.yml
-docker-compose-redis-sentinel1.yml
-docker-compose-redis-sentinel2.yml
-docker-compose-redis-sentinel3.yml
+docker-compose.yml
+

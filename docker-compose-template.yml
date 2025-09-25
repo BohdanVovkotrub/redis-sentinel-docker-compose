@@ -1,0 +1,155 @@
+services:
+  redis-master:
+    image: ${DOCKERHUB_IMAGE_REDIS}
+    container_name: redis-master
+    restart: always
+    command: redis-server --requirepass ${REDIS_PASSWORD} --masterauth ${REDIS_PASSWORD}
+    volumes:
+      - redis-master-data:/data:rw
+    ports:
+      - "${REDIS_MASTER_PORT}:${REDIS_MASTER_PORT}"
+    networks:
+      - ${DOCKER_NETWORK_NAME}
+ 
+  redis-slave:
+    image: ${DOCKERHUB_IMAGE_REDIS}
+    container_name: redis-slave
+    restart: always
+    command: redis-server --slaveof ${REDIS_MASTER_HOST} ${REDIS_MASTER_PORT} --port ${REDIS_SLAVE_PORT} --masterauth ${REDIS_PASSWORD} --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis-slave-data:/data:rw
+    ports:
+      - "${REDIS_SLAVE_PORT}:${REDIS_SLAVE_PORT}"
+    networks:
+      - ${DOCKER_NETWORK_NAME}
+    depends_on:
+      - redis-master
+
+  # Sentinel instance 1
+  redis-sentinel-1:
+    image: ${DOCKERHUB_IMAGE_REDIS}
+    container_name: redis-sentinel-1
+    restart: always
+    volumes:
+      - redis-sentinel-base:/redis-sentinel-base
+    environment:
+      - TZ=Europe/Kyiv
+      - DOCKERHUB_IMAGE_REDIS=${DOCKERHUB_IMAGE_REDIS}
+      - REDIS_MASTER_HOST=${REDIS_MASTER_HOST}
+      - REDIS_MASTER_PORT=${REDIS_MASTER_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_SENTINEL_NAME=${REDIS_SENTINEL_NAME}
+      - REDIS_SENTINEL_PORT=${REDIS_SENTINEL1_PORT}
+      - REDIS_SENTINEL_QUORUM=${REDIS_SENTINEL_QUORUM}
+      - REDIS_SENTINEL_DOWN_AFTER=${REDIS_SENTINEL_DOWN_AFTER}
+      - REDIS_SENTINEL_FAILOVER=${REDIS_SENTINEL_FAILOVER}
+    command: >
+      sh -c "
+        /redis-sentinel-base/init-sentinel.sh
+      "
+    ports:
+      - "${REDIS_SENTINEL1_PORT}:${REDIS_SENTINEL1_PORT}"
+    networks:
+      - ${DOCKER_NETWORK_NAME}
+    depends_on:
+      - redis-master
+      - redis-slave
+
+  # Sentinel instance 2
+  redis-sentinel-2:
+    image: ${DOCKERHUB_IMAGE_REDIS}
+    container_name: redis-sentinel-2
+    restart: always
+    volumes:
+      - redis-sentinel-base:/redis-sentinel-base
+    environment:
+      - DOCKERHUB_IMAGE_REDIS=${DOCKERHUB_IMAGE_REDIS}
+      - REDIS_MASTER_HOST=${REDIS_MASTER_HOST}
+      - REDIS_MASTER_PORT=${REDIS_MASTER_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_SENTINEL_NAME=${REDIS_SENTINEL_NAME}
+      - REDIS_SENTINEL_PORT=${REDIS_SENTINEL2_PORT}
+      - REDIS_SENTINEL_QUORUM=${REDIS_SENTINEL_QUORUM}
+      - REDIS_SENTINEL_DOWN_AFTER=${REDIS_SENTINEL_DOWN_AFTER}
+      - REDIS_SENTINEL_FAILOVER=${REDIS_SENTINEL_FAILOVER}
+    command: >
+      sh -c "
+        /redis-sentinel-base/init-sentinel.sh
+      "
+    ports:
+      - "${REDIS_SENTINEL2_PORT}:${REDIS_SENTINEL2_PORT}"
+    networks:
+      - ${DOCKER_NETWORK_NAME}
+    depends_on:
+      - redis-master
+      - redis-slave
+
+  # Sentinel instance 3
+  redis-sentinel-3:
+    image: ${DOCKERHUB_IMAGE_REDIS}
+    container_name: redis-sentinel-3
+    restart: always
+    volumes:
+      - redis-sentinel-base:/redis-sentinel-base
+    environment:
+      - DOCKERHUB_IMAGE_REDIS=${DOCKERHUB_IMAGE_REDIS}
+      - REDIS_MASTER_HOST=${REDIS_MASTER_HOST}
+      - REDIS_MASTER_PORT=${REDIS_MASTER_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_SENTINEL_NAME=${REDIS_SENTINEL_NAME}
+      - REDIS_SENTINEL_PORT=${REDIS_SENTINEL3_PORT}
+      - REDIS_SENTINEL_QUORUM=${REDIS_SENTINEL_QUORUM}
+      - REDIS_SENTINEL_DOWN_AFTER=${REDIS_SENTINEL_DOWN_AFTER}
+      - REDIS_SENTINEL_FAILOVER=${REDIS_SENTINEL_FAILOVER}
+    command: >
+      sh -c "
+        /redis-sentinel-base/init-sentinel.sh
+      "
+    ports:
+      - "${REDIS_SENTINEL3_PORT}:${REDIS_SENTINEL3_PORT}"
+    networks:
+      - ${DOCKER_NETWORK_NAME}
+    depends_on:
+      - redis-master
+      - redis-slave
+
+
+  redis-insight:
+    image: ${DOCKERHUB_IMAGE_REDIS_INSIGHT}
+    container_name: redis-insight
+    ports:
+      - "${REDIS_INSIGHT_PORT}:${REDIS_INSIGHT_PORT}"
+    volumes:
+      - redis-insight-data:/db:rw
+    depends_on:
+      - redis-sentinel-1
+      - redis-sentinel-2
+      - redis-sentinel-3
+    networks:
+      - ${DOCKER_NETWORK_NAME}
+
+volumes:
+  redis-master-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/master
+  redis-slave-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/slave
+  redis-sentinel-base:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./redis-sentinel-base
+  redis-insight-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/insight
